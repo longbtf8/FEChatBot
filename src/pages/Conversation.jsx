@@ -17,7 +17,6 @@ import {
   SubmitButton,
   Textarea,
 } from "@/components/ui";
-import { current } from "@reduxjs/toolkit";
 
 function Conversation() {
   const dispatch = useDispatch();
@@ -40,7 +39,7 @@ function Conversation() {
           conversationId,
           (draft) => {
             // draft.push(message);
-            draft.message?.push(message);
+            draft.messages?.push(message);
           },
         ),
       );

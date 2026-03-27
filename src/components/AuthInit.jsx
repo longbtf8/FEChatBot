@@ -1,22 +1,23 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { useLazyGetMeQuery } from "@/store/api/authApi";
-import { setChecked, clearUser } from "@/store/authSlice";
+import { useGetMeQuery } from "@/store/api/authApi";
+import { setChecked, clearUser, setUser } from "@/store/authSlice";
 
 function AuthInit({ children }) {
-    const dispatch = useDispatch();
-    const [getMe] = useLazyGetMeQuery();
+  const dispatch = useDispatch();
+  const { data, error, isSuccess, isError, isLoading } = useGetMeQuery();
 
-    useEffect(() => {
-        const token = localStorage.getItem("access_token");
-        if (token) {
-            getMe().unwrap().catch(() => dispatch(clearUser()));
-        } else {
-            dispatch(setChecked());
-        }
-    }, [dispatch, getMe]);
+  useEffect(() => {
+    if (isSuccess && data) {
+      dispatch(setUser(data.data));
+    }
+    if (isError) {
+      dispatch(clearUser());
+      dispatch(setChecked());
+    }
+  }, [dispatch]);
 
-    return children;
+  return children;
 }
 
 export default AuthInit;

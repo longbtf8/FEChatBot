@@ -29,7 +29,7 @@ function Home() {
       ) : (
         <ul className="space-y-2">
           {users.map((user) => {
-            if (user.email !== currentUser.email) {
+            if (user.email !== currentUser?.email) {
               return (
                 <li key={user.id}>
                   <UserCard to={newChatUrl(user.id)}>
