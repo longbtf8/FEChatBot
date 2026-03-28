@@ -14,6 +14,10 @@ export const conversationsApi = apiSlice.injectEndpoints({
       query: (id) => `conversations/${id}/messages`,
       transformResponse: (response) => response?.data ?? response ?? {},
     }),
+    findConversation: builder.query({
+      query: (id) => `conversations/dm/${id}`,
+      transformResponse: (response) => response?.data ?? response,
+    }),
     createMessage: builder.mutation({
       query: ({ conversationId, ...body }) => ({
         url: `conversations/${conversationId}/messages`,
@@ -29,4 +33,6 @@ export const {
   useCreateConversationMutation,
   useGetMessagesQuery,
   useCreateMessageMutation,
+  useFindConversationQuery,
+  useLazyFindConversationQuery,
 } = conversationsApi;

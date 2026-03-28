@@ -1,14 +1,14 @@
 import { useLocation } from "react-router-dom";
 import { useGetUsersQuery } from "@/store/api/usersApi";
-import { newChatUrl } from "@/config/routes";
 import { PageTitle, Spinner, UserCard } from "@/components/ui";
 import { useSelector } from "react-redux";
+import { useChangeToConversation } from "@/hook/useChangeToConversation";
 
 function Home() {
   const { data: users = [], isLoading } = useGetUsersQuery();
   const { user: currentUser } = useSelector((state) => state.auth);
   const { state } = useLocation();
-
+  const { handleClick } = useChangeToConversation();
   return (
     <div className="max-w-2xl mx-auto p-6">
       {state?.message && (
@@ -31,8 +31,16 @@ function Home() {
           {users.map((user) => {
             if (user.email !== currentUser?.email) {
               return (
-                <li key={user.id}>
-                  <UserCard to={newChatUrl(user.id)}>
+                <li
+                  key={user.id}
+                  onClick={(e) => {
+                    handleClick(e, user.id);
+                  }}
+                >
+                  <UserCard
+                    // to={newChatUrl(user.id)}
+                    to={"#"}
+                  >
                     <span className="text-slate-800 font-medium">
                       {user.email}
                     </span>
