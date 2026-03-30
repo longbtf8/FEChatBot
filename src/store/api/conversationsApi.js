@@ -26,6 +26,10 @@ export const conversationsApi = apiSlice.injectEndpoints({
       }),
       transformResponse: (response) => response?.data ?? response,
     }),
+    getConversation: builder.query({
+      query: () => `conversations`,
+      transformResponse: (response) => response?.data ?? response,
+    }),
   }),
 });
 
@@ -35,4 +39,5 @@ export const {
   useCreateMessageMutation,
   useFindConversationQuery,
   useLazyFindConversationQuery,
+  useGetConversationQuery,
 } = conversationsApi;

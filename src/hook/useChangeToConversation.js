@@ -8,6 +8,7 @@ export const useChangeToConversation = () => {
 
   const handleClick = async (e, userId) => {
     e.preventDefault();
+    console.log(userId);
     if (!userId) {
       return;
     }
