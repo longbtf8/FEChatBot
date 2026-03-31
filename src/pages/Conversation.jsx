@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { ROUTES } from "@/config/routes";
@@ -29,6 +29,35 @@ function Conversation() {
   const messages = data?.messages || [];
   const [createMessage, { isLoading }] = useCreateMessageMutation();
 
+  const messageEndRef = useRef(null);
+  const listRef = useRef(null);
+
+  // quận mess khi lần đầu ta chạy
+
+  // Thêm reset isFirstLoad khi đổi conversation
+  const isFirstLoad = useRef(true);
+  useEffect(() => {
+    isFirstLoad.current = true;
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (isFirstLoad.current && messages.length > 0) {
+      messageEndRef.current?.scrollIntoView({ behavior: "instant" });
+      isFirstLoad.current = false;
+    }
+  }, [messages.length]);
+
+  useEffect(() => {
+    if (isFirstLoad.current) return;
+    const list = listRef.current;
+    if (!list) return;
+    const distance = list.scrollHeight - list.scrollTop - list.clientHeight;
+    //50 bé quá lên em tăng nên 150 để nó quận rõ thấy hơn
+    if (distance <= 150) {
+      messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages.length]);
+  // realTime soketi
   useEffect(() => {
     if (!conversationId) return;
     const channel = socketClient.subscribe(`conversation-${conversationId}`);
@@ -48,6 +77,7 @@ function Conversation() {
     return () => channel.unbind("created", handleCreated);
   }, [conversationId, dispatch]);
 
+  // submit gửi tin nhắn
   const handleSubmit = async (e) => {
     e.preventDefault();
     const text = content;
@@ -77,10 +107,18 @@ function Conversation() {
 
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         {error && <ErrorAlert className="mb-4">{error}</ErrorAlert>}
-        <ul className="flex-1 overflow-y-auto mb-4 space-y-2 pr-2">
+        <ul
+          className="flex-1 overflow-y-auto mb-4 space-y-2 pr-2"
+          ref={listRef}
+        >
           {messages.map((message) => (
-            <MessageBubble key={message.id}>{message.content}</MessageBubble>
+            <MessageBubble key={message.id}>
+              <div className="break-words whitespace-pre-wrap max-w-full">
+                {message.content}
+              </div>
+            </MessageBubble>
           ))}
+          <div ref={messageEndRef}></div>
         </ul>
         <div className="flex gap-2 shrink-0">
           <Textarea

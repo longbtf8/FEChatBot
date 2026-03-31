@@ -25,11 +25,11 @@ function SidebarContent({ onItemClick }) {
   const { handleClick, isChecking } = useChangeToConversation();
   const { id: conversationId } = useParams();
   const convIdStr = conversations.map((c) => c.id).join(",");
-  console.log(convIdStr);
 
+  // Subscribe TẤT CẢ channels — không chỉ channel đang active
   useEffect(() => {
-    if (!conversationId) return;
-    const channel = socketClient.subscribe(`conversation-${conversationId}`);
+    if (!conversations.length) return;
+
     const handleUpdate = (newMessage) => {
       dispatch(
         conversationsApi.util.updateQueryData(
@@ -50,9 +50,17 @@ function SidebarContent({ onItemClick }) {
         ),
       );
     };
-    channel.bind("created", handleUpdate);
-    return () => channel.unbind("created", handleUpdate);
-  }, [conversationId, dispatch, convIdStr]);
+    const channels = conversations.map((c) => {
+      const ch = socketClient.subscribe(`conversation-${c.id}`);
+      ch.bind("created", handleUpdate);
+      return ch;
+    });
+    return () => {
+      channels.forEach((c) => {
+        c.unbind("created", handleUpdate);
+      });
+    };
+  }, [dispatch, convIdStr]);
 
   const filtered = useMemo(
     () =>
@@ -70,12 +78,13 @@ function SidebarContent({ onItemClick }) {
     handleClick(e, userId);
     onItemClick?.();
   };
+
+  // Refetch khi vào conversation mới chưa có trong list
   useEffect(() => {
     if (!conversationId && isLoading) return;
     const alreadyInList = conversations.some(
       (c) => String(c.id) === String(conversationId),
     );
-    console.log(alreadyInList);
     if (!alreadyInList) {
       refetch();
     }
