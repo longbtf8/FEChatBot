@@ -10,39 +10,41 @@ import NewChat from "@/pages/NewChat";
 import Conversation from "@/pages/Conversation";
 import { ROUTES } from "@/config/routes";
 import "@/App.css";
+import { Toaster } from "react-hot-toast";
 
 function App() {
-    return (
-        <BrowserRouter>
-            <AuthInit>
-                <Routes>
-                    <Route element={<Layout />}>
-                        <Route index element={<Home />} />
-                        <Route path={ROUTES.LOGIN} element={<Login />} />
-                        <Route path={ROUTES.REGISTER} element={<Register />} />
-                        <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmail />} />
-                        <Route
-                            path={ROUTES.NEW_CHAT}
-                            element={
-                                <PrivateRoute>
-                                    <NewChat />
-                                </PrivateRoute>
-                            }
-                        />
-                        <Route
-                            path={ROUTES.CONVERSATION}
-                            element={
-                                <PrivateRoute>
-                                    <Conversation />
-                                </PrivateRoute>
-                            }
-                        />
-                        <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
-                    </Route>
-                </Routes>
-            </AuthInit>
-        </BrowserRouter>
-    );
+  return (
+    <BrowserRouter>
+      <Toaster />
+      <AuthInit>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path={ROUTES.LOGIN} element={<Login />} />
+            <Route path={ROUTES.REGISTER} element={<Register />} />
+            <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmail />} />
+            <Route
+              path={ROUTES.NEW_CHAT}
+              element={
+                <PrivateRoute>
+                  <NewChat />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path={ROUTES.CONVERSATION}
+              element={
+                <PrivateRoute>
+                  <Conversation />
+                </PrivateRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
+          </Route>
+        </Routes>
+      </AuthInit>
+    </BrowserRouter>
+  );
 }
 
 export default App;

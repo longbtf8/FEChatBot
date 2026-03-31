@@ -11,7 +11,8 @@ export const conversationsApi = apiSlice.injectEndpoints({
       transformResponse: (response) => response?.data ?? response,
     }),
     getMessages: builder.query({
-      query: (id) => `conversations/${id}/messages`,
+      query: ({ id, limit = 30, before }) =>
+        `conversations/${id}/messages?limit=${limit}${before ? `&before=${before}` : ""}`,
       transformResponse: (response) => response?.data ?? response ?? {},
     }),
     findConversation: builder.query({
@@ -36,6 +37,7 @@ export const conversationsApi = apiSlice.injectEndpoints({
 export const {
   useCreateConversationMutation,
   useGetMessagesQuery,
+  useLazyGetMessagesQuery,
   useCreateMessageMutation,
   useFindConversationQuery,
   useLazyFindConversationQuery,

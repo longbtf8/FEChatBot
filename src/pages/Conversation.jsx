@@ -7,6 +7,7 @@ import {
   useGetMessagesQuery,
   useCreateMessageMutation,
   conversationsApi,
+  useLazyGetMessagesQuery,
 } from "@/store/api/conversationsApi";
 import { getApiErrorMessage } from "@/utils/errors";
 import {
@@ -17,25 +18,101 @@ import {
   SubmitButton,
   Textarea,
 } from "@/components/ui";
+import toast from "react-hot-toast";
 
 function Conversation() {
   const dispatch = useDispatch();
+  const { id: conversationId } = useParams();
+  const LIMIT = 30;
+  //state
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
-  const { id: conversationId } = useParams();
-  const { data } = useGetMessagesQuery(conversationId, {
-    skip: !conversationId,
-  });
-  const messages = data?.messages || [];
-  const [createMessage, { isLoading }] = useCreateMessageMutation();
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingOlder, setIsFetchingOlder] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [newMsgCount, setNewMsgCount] = useState(0);
 
+  //ref
   const messageEndRef = useRef(null);
   const listRef = useRef(null);
+  const isFirstLoad = useRef(true);
+  const isNearBottomRef = useRef(true);
 
+  //innit
+  const queryArg = { id: conversationId, limit: LIMIT };
+  const [createMessage, { isLoading }] = useCreateMessageMutation();
+  const { data: initialData } = useGetMessagesQuery(queryArg, {
+    skip: !conversationId,
+  });
+
+  // lấy dữ liệu ban đầu
+  useEffect(() => {
+    if (initialData?.messages) {
+      setMessages(initialData?.messages);
+      setHasMore(initialData.hasMore);
+    }
+  }, [initialData]);
   // quận mess khi lần đầu ta chạy
+  const [fetchOlder] = useLazyGetMessagesQuery();
+  const loadMoreMessages = async () => {
+    if (!hasMore || isFetchingOlder || messages.length === 0) return;
+    const oldestMessageId = messages[0].id;
+    setIsFetchingOlder(true);
+    const scrollHeightBefore = listRef?.current.scrollHeight;
+    try {
+      const result = await fetchOlder({
+        id: conversationId,
+        limit: LIMIT,
+        before: oldestMessageId, // Gửi ID này lên Server để lấy các tin TRƯỚC ĐÓ
+      }).unwrap();
+      if (result) {
+        setMessages((prev) => [...result.messages, ...prev]);
+        setHasMore(result.hasMore);
+
+        // Sau khi setMessages xong. , giữ cho thanh quận đứng yên
+        requestAnimationFrame(() => {
+          const list = listRef.current;
+          if (list) {
+            list.scrollTop = list.scrollHeight - scrollHeightBefore;
+          }
+        });
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải tin cũ:", error);
+    } finally {
+      setIsFetchingOlder(false);
+    }
+  };
+  const handleScroll = () => {
+    const list = listRef.current;
+    if (!list) return;
+
+    // Nếu cuộn lên sát đỉnh (ví dụ còn 10px nữa là kịch)
+    if (list.scrollTop <= 10 && !isFetchingOlder && hasMore) {
+      loadMoreMessages();
+    }
+    // Tính khoảng cách từ đáy (scrollHeight - scrollTop - clientHeight)
+    const distanceFromBottom =
+      list.scrollHeight - list.scrollTop - list.clientHeight;
+    const nearBottom = distanceFromBottom < 150;
+    isNearBottomRef.current = nearBottom;
+
+    if (nearBottom) {
+      return setNewMsgCount(0);
+    }
+  };
+  // Đăng ký sự kiện scroll cho thẻ <ul>
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+
+    list.addEventListener("scroll", handleScroll);
+    return () => list.removeEventListener("scroll", handleScroll);
+  }, [messages, hasMore, isFetchingOlder]);
 
   // Thêm reset isFirstLoad khi đổi conversation
-  const isFirstLoad = useRef(true);
   useEffect(() => {
     isFirstLoad.current = true;
   }, [conversationId]);
@@ -57,21 +134,24 @@ function Conversation() {
       messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages.length]);
+
   // realTime soketi
   useEffect(() => {
     if (!conversationId) return;
     const channel = socketClient.subscribe(`conversation-${conversationId}`);
     const handleCreated = (message) => {
+      setMessages((prev) => [...prev, message]);
       dispatch(
         conversationsApi.util.updateQueryData(
           "getMessages",
-          conversationId,
+          queryArg,
           (draft) => {
             // draft.push(message);
             draft.messages?.push(message);
           },
         ),
       );
+      setNewMsgCount((prev) => prev + 1);
     };
     channel.bind("created", handleCreated);
     return () => channel.unbind("created", handleCreated);
@@ -80,7 +160,11 @@ function Conversation() {
   // submit gửi tin nhắn
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const text = content;
+    const text = content.trim();
+    if (!text) {
+      toast.error("Vui lòng nhập nội dung tin nhắn!");
+      return; // Dừng hàm tại đây, không gọi API
+    }
     setContent("");
     setError("");
     try {
@@ -120,6 +204,32 @@ function Conversation() {
           ))}
           <div ref={messageEndRef}></div>
         </ul>
+
+        {newMsgCount > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              setNewMsgCount(0);
+              messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-all animate-bounce flex items-center gap-2"
+          >
+            <span>{newMsgCount} tin nhắn mới</span>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 13l-7 7-7-7"
+              />
+            </svg>
+          </button>
+        )}
         <div className="flex gap-2 shrink-0">
           <Textarea
             className="flex-1"
