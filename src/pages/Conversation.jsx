@@ -32,7 +32,7 @@ function Conversation() {
   useEffect(() => {
     if (!conversationId) return;
     const channel = socketClient.subscribe(`conversation-${conversationId}`);
-    channel.bind("created", (message) => {
+    const handleCreated = (message) => {
       dispatch(
         conversationsApi.util.updateQueryData(
           "getMessages",
@@ -43,8 +43,9 @@ function Conversation() {
           },
         ),
       );
-    });
-    return () => channel.unsubscribe();
+    };
+    channel.bind("created", handleCreated);
+    return () => channel.unbind("created", handleCreated);
   }, [conversationId, dispatch]);
 
   const handleSubmit = async (e) => {

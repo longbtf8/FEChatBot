@@ -15,16 +15,22 @@ function SidebarContent({ onItemClick }) {
   const dispatch = useDispatch();
 
   const [search, setSearch] = useState("");
-  const { data: conversations = [], isLoading } = useGetConversationQuery();
-  // const users = conversations?.map((c) => c?.conversationUsers[0].user);
+  const {
+    data: conversations = [],
+    isLoading,
+    refetch,
+  } = useGetConversationQuery();
+
   const { user: currentUser } = useSelector((state) => state.auth);
   const { handleClick, isChecking } = useChangeToConversation();
   const { id: conversationId } = useParams();
+  const convIdStr = conversations.map((c) => c.id).join(",");
+  console.log(convIdStr);
 
   useEffect(() => {
     if (!conversationId) return;
     const channel = socketClient.subscribe(`conversation-${conversationId}`);
-    channel.bind("created", (newMessage) => {
+    const handleUpdate = (newMessage) => {
       dispatch(
         conversationsApi.util.updateQueryData(
           "getConversation",
@@ -43,8 +49,10 @@ function SidebarContent({ onItemClick }) {
           },
         ),
       );
-    });
-  }, [conversationId, dispatch]);
+    };
+    channel.bind("created", handleUpdate);
+    return () => channel.unbind("created", handleUpdate);
+  }, [conversationId, dispatch, convIdStr]);
 
   const filtered = useMemo(
     () =>
@@ -62,7 +70,16 @@ function SidebarContent({ onItemClick }) {
     handleClick(e, userId);
     onItemClick?.();
   };
-
+  useEffect(() => {
+    if (!conversationId && isLoading) return;
+    const alreadyInList = conversations.some(
+      (c) => String(c.id) === String(conversationId),
+    );
+    console.log(alreadyInList);
+    if (!alreadyInList) {
+      refetch();
+    }
+  }, [conversationId, conversations, isLoading, refetch, convIdStr]);
   return (
     <>
       {/* Search */}
@@ -105,7 +122,7 @@ function SidebarContent({ onItemClick }) {
         ) : (
           <ul className="py-2 px-2 space-y-1">
             {filtered?.map((conversation) => {
-              const isActive = conversation.id == conversationId;
+              const isActive = conversation?.id == conversationId;
 
               return (
                 <li key={conversation.id}>
@@ -114,7 +131,7 @@ function SidebarContent({ onItemClick }) {
                     onClick={(e) =>
                       handleUserClick(
                         e,
-                        conversation.conversationUsers[0].user.id,
+                        conversation?.conversationUsers[0]?.user.id,
                       )
                     }
                     disabled={isChecking}
@@ -127,15 +144,15 @@ function SidebarContent({ onItemClick }) {
                     <span
                       className={`text-slate-800  text-base truncate block font-bold ${isActive ? "text-white" : "text-slate-900"}`}
                     >
-                      {conversation.conversationUsers[0].user.email}
+                      {conversation?.conversationUsers[0]?.user.email}
                     </span>
                     <span
                       className={`block truncate  ${isActive ? "text-blue-100" : "text-slate-500"}`}
                     >
-                      {conversation.messages[0].content}
+                      {conversation?.messages[0]?.content}
                     </span>
                     <span>
-                      {formatTimestamp(conversation.messages[0].updated_at)}
+                      {formatTimestamp(conversation?.messages[0]?.updated_at)}
                     </span>
                   </button>
                 </li>
@@ -157,7 +174,7 @@ function Sidebar({ isOpen, onClose }) {
   return (
     <>
       {/* === DESKTOP: static sidebar === */}
-      <aside className="hidden md:flex w-72 shrink-0 border-r border-slate-200 bg-white flex-col overflow-hidden">
+      <aside className="hidden md:flex w-80 shrink-0 border-r border-slate-200 bg-white flex-col overflow-hidden">
         <SidebarContent />
       </aside>
 
