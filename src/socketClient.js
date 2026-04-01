@@ -4,6 +4,7 @@ const client = new PusherJS("HKFHWKF", {
   cluster: "",
   wsHost: "soketi-fy9d.onrender.com",
   wsPort: 443,
+  wssPort: 443,
   forceTLS: true,
   encrypted: true,
   disableStats: true,
