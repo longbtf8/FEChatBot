@@ -14,7 +14,7 @@ import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/FEChatBot/">
       <Toaster />
       <AuthInit>
         <Routes>
