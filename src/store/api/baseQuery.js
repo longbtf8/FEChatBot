@@ -1,7 +1,6 @@
 import { fetchBaseQuery } from "@reduxjs/toolkit/query";
 
-const API_URL =
-  import.meta.env.VITE_API_URL || "https://bechatbot.onrender.com/";
+const API_URL = "https://bechatbot.onrender.com/api";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: API_URL.replace(/\/$/, ""),
