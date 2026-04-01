@@ -2,9 +2,9 @@ import PusherJS from "pusher-js";
 
 const client = new PusherJS("HKFHWKF", {
   cluster: "",
-  wsHost: "127.0.0.1",
-  wsPort: 6002,
-  forceTLS: false,
+  wsHost: "soketi-fy9d.onrender.com",
+  wsPort: 443,
+  forceTLS: true,
   encrypted: true,
   disableStats: true,
   enabledTransports: ["ws", "wss"],
